@@ -81,7 +81,7 @@ def letterbox(img,
     return img, ratio, (dw, dh)
 
 
-class PytorchYoloV7Detector(object):
+class YoloV7Detector(object):
 
     def __init__(self, model_file_path=None):
         self.device = torch.device('cuda')
@@ -103,7 +103,7 @@ class PytorchYoloV7Detector(object):
 
     def loadModel(self, model_file_path):
         if not os.path.exists(model_file_path):
-            print("[ERROR][PytorchYoloV7Detector::loadModel]")
+            print("[ERROR][YoloV7Detector::loadModel]")
             print("\t model_file not exist!")
             return False
 
@@ -186,8 +186,8 @@ def demo():
     model_file_path = "/home/chli/chLi/yolov7/yolov7-e6e.pt"
     image_file_path = "/home/chli/chLi/NeRF/chair2/images/image_10.png"
 
-    pytorch_yolov7_detector = PytorchYoloV7Detector(model_file_path)
-    data = pytorch_yolov7_detector.detectImage(image_file_path)
+    yolov7_detector = YoloV7Detector(model_file_path)
+    data = yolov7_detector.detectImage(image_file_path)
     print(data)
     return True
 
@@ -199,7 +199,7 @@ def demo_folder():
     new_image_folder_path = "/home/chli/chLi/NeRF/chair2/new_images/"
     os.makedirs(new_image_folder_path, exist_ok=True)
 
-    pytorch_yolov7_detector = PytorchYoloV7Detector(model_file_path)
+    yolov7_detector = YoloV7Detector(model_file_path)
 
     image_file_name_list = os.listdir(image_folder_path)
     for image_file_name in tqdm(image_file_name_list):
@@ -207,7 +207,7 @@ def demo_folder():
             continue
 
         image_file_path = image_folder_path + image_file_name
-        data = pytorch_yolov7_detector.detectImage(image_file_path)
+        data = yolov7_detector.detectImage(image_file_path)
 
         image = cv2.imread(image_file_path)
 
