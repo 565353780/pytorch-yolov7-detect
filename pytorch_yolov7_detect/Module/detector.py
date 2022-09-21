@@ -207,6 +207,9 @@ def demo_folder():
         data = pytorch_yolov7_detector.detectImage(image_file_path)
 
         image = cv2.imread(image_file_path)
+        b_channel, g_channel, r_channel = cv2.split(image)
+        alpha_channel = np.ones(b_channel.shape, dtype=np.uint8) * 255
+        image = cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
 
         save_image = np.zeros(image.shape, dtype=np.uint8)
         save_image_size = save_image.shape
@@ -214,19 +217,20 @@ def demo_folder():
             label = result_dict['label']
             if label != "chair":
                 continue
+
             xywh = result_dict['xywh']
             image_center_x = int(xywh[0] * save_image_size[1])
             image_center_y = int(xywh[1] * save_image_size[0])
             bbox_x_diff = int(xywh[2] * save_image_size[1] / 2.0)
             bbox_y_diff = int(xywh[3] * save_image_size[0] / 2.0)
-            save_image[image_center_y - bbox_y_diff:image_center_y +
-                       bbox_y_diff,
-                       image_center_x - bbox_x_diff:image_center_x +
-                       bbox_x_diff] = image[image_center_y -
-                                            bbox_y_diff:image_center_y +
-                                            bbox_y_diff, image_center_x -
-                                            bbox_x_diff:image_center_x +
-                                            bbox_x_diff]
+
+            save_image[
+                image_center_y - bbox_y_diff:image_center_y + bbox_y_diff,
+                image_center_x - bbox_x_diff:image_center_x + bbox_x_diff
+            ] = image[
+                image_center_y - bbox_y_diff:image_center_y + bbox_y_diff,
+                image_center_x - bbox_x_diff:image_center_x + bbox_x_diff
+            ]
 
         new_image_file_path = new_image_folder_path + image_file_name
         cv2.imwrite(new_image_file_path, save_image)
