@@ -207,6 +207,7 @@ def demo_folder():
         data = pytorch_yolov7_detector.detectImage(image_file_path)
 
         image = cv2.imread(image_file_path)
+
         b_channel, g_channel, r_channel = cv2.split(image)
         alpha_channel = np.ones(b_channel.shape, dtype=np.uint8) * 255
         image = cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
