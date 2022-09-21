@@ -154,27 +154,30 @@ class PytorchYoloV7Detector(object):
 
         data['predictions']['results'] = []
         for det in pred:
-            result_dict = {}
+            if len(det) == 0:
+                continue
+
             gn = torch.tensor(im0s.shape)[[1, 0, 1, 0]]
-            if len(det):
-                det[:, :4] = scale_coords(img.shape[2:], det[:, :4],
-                                          im0s.shape).round()
+            result_dict = {}
 
-                for *xyxy, conf, cls in reversed(det):
-                    xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) /
-                            gn).view(-1).tolist()  # normalized xywh
-                    result_dict['class_id'] = cls
-                    result_dict['conf'] = conf
-                    result_dict['xywh'] = xywh
-                    result_dict['label'] = self.names[int(cls)]
+            det[:, :4] = scale_coords(img.shape[2:], det[:, :4],
+                                      im0s.shape).round()
 
-                    label = f'{self.names[int(cls)]} {conf:.2f}'
-                    plot_one_box(xyxy,
-                                 im0s,
-                                 label=label,
-                                 color=self.colors[int(cls)],
-                                 line_thickness=1)
-                data['predictions']['results'].append(result_dict)
+            for *xyxy, conf, cls in reversed(det):
+                xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) /
+                        gn).view(-1).tolist()
+                result_dict['class_id'] = cls
+                result_dict['conf'] = conf
+                result_dict['xywh'] = xywh
+                result_dict['label'] = self.names[int(cls)]
+
+                label = f'{self.names[int(cls)]} {conf:.2f}'
+                plot_one_box(xyxy,
+                             im0s,
+                             label=label,
+                             color=self.colors[int(cls)],
+                             line_thickness=1)
+            data['predictions']['results'].append(result_dict)
         data['predictions']['render'] = im0s
         return data
 
