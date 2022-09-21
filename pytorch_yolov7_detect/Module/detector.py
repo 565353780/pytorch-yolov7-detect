@@ -10,6 +10,7 @@ import cv2
 import torch
 import numpy as np
 import torch.nn as nn
+from tqdm import tqdm
 from numpy import random
 
 from models.common import Conv
@@ -150,9 +151,10 @@ class PytorchYoloV7Detector(object):
                                    agnostic=False)
 
         data = {'inputs': {}, 'predictions': {}, 'losses': {}, 'logs': {}}
-        for i, det in enumerate(pred):
-            data['predictions'][str(i)] = {}
 
+        data['predictions']['results'] = []
+        for det in pred:
+            result_dict = {}
             gn = torch.tensor(im0s.shape)[[1, 0, 1, 0]]
             if len(det):
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4],
@@ -161,11 +163,10 @@ class PytorchYoloV7Detector(object):
                 for *xyxy, conf, cls in reversed(det):
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) /
                             gn).view(-1).tolist()  # normalized xywh
-                    print(cls, xywh, conf)
-                    data['predictions'][str(i)]['class_id'] = cls
-                    data['predictions'][str(i)]['conf'] = conf
-                    data['predictions'][str(i)]['xywh'] = xywh
-                    data['predictions'][str(i)]['label'] = self.names[int(cls)]
+                    result_dict['class_id'] = cls
+                    result_dict['conf'] = conf
+                    result_dict['xywh'] = xywh
+                    result_dict['label'] = self.names[int(cls)]
 
                     label = f'{self.names[int(cls)]} {conf:.2f}'
                     plot_one_box(xyxy,
@@ -173,6 +174,7 @@ class PytorchYoloV7Detector(object):
                                  label=label,
                                  color=self.colors[int(cls)],
                                  line_thickness=1)
+                data['predictions']['results'].append(result_dict)
         data['predictions']['render'] = im0s
         return data
 
@@ -184,4 +186,48 @@ def demo():
     pytorch_yolov7_detector = PytorchYoloV7Detector(model_file_path)
     data = pytorch_yolov7_detector.detectImage(image_file_path)
     print(data)
+    return True
+
+
+def demo_folder():
+    model_file_path = "/home/chli/chLi/yolov7/yolov7-e6e.pt"
+    image_folder_path = "/home/chli/chLi/NeRF/chair2/images/"
+
+    new_image_folder_path = "/home/chli/chLi/NeRF/chair2/new_images/"
+    os.makedirs(new_image_folder_path, exist_ok=True)
+
+    pytorch_yolov7_detector = PytorchYoloV7Detector(model_file_path)
+
+    image_file_name_list = os.listdir(image_folder_path)
+    for image_file_name in tqdm(image_file_name_list):
+        if image_file_name[-4:] not in ['.jpg', '.png']:
+            continue
+
+        image_file_path = image_folder_path + image_file_name
+        data = pytorch_yolov7_detector.detectImage(image_file_path)
+
+        image = cv2.imread(image_file_path)
+
+        save_image = np.zeros(image.shape, dtype=np.uint8)
+        save_image_size = save_image.shape
+        for result_dict in data['predictions']['results']:
+            label = result_dict['label']
+            if label != "chair":
+                continue
+            xywh = result_dict['xywh']
+            image_center_x = int(xywh[0] * save_image_size[1])
+            image_center_y = int(xywh[1] * save_image_size[0])
+            bbox_x_diff = int(xywh[2] * save_image_size[1] / 2.0)
+            bbox_y_diff = int(xywh[3] * save_image_size[0] / 2.0)
+            save_image[image_center_y - bbox_y_diff:image_center_y +
+                       bbox_y_diff,
+                       image_center_x - bbox_x_diff:image_center_x +
+                       bbox_x_diff] = image[image_center_y -
+                                            bbox_y_diff:image_center_y +
+                                            bbox_y_diff, image_center_x -
+                                            bbox_x_diff:image_center_x +
+                                            bbox_x_diff]
+
+        new_image_file_path = new_image_folder_path + image_file_name
+        cv2.imwrite(new_image_file_path, save_image)
     return True
